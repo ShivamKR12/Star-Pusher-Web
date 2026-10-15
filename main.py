@@ -1,5 +1,21 @@
-import random, sys, copy, os, pygame
-from pygame.locals import *
+import asyncio, random, sys, copy, os, pygame
+
+QUIT = pygame.QUIT
+KEYDOWN = pygame.KEYDOWN
+KEYUP = pygame.KEYUP
+K_LEFT = pygame.K_LEFT
+K_RIGHT = pygame.K_RIGHT
+K_UP = pygame.K_UP
+K_DOWN = pygame.K_DOWN
+K_a = pygame.K_a
+K_d = pygame.K_d
+K_w = pygame.K_w
+K_s = pygame.K_s
+K_n = pygame.K_n
+K_b = pygame.K_b
+K_p = pygame.K_p
+K_ESCAPE = pygame.K_ESCAPE
+K_BACKSPACE = pygame.K_BACKSPACE
 
 FPS = 30 # frames per second to update the screen
 WINWIDTH = 800 # width of the program's window, in pixels
@@ -55,11 +71,13 @@ def resource_path(relative_path):
     # Join the base path with the relative path to get the full path.
     return os.path.join(base_path, relative_path)
 
-def main():
+async def main():
     global FPSCLOCK, DISPLAYSURF, IMAGESDICT, TILEMAPPING, OUTSIDEDECOMAPPING, BASICFONT, PLAYERIMAGES, currentImage
 
     # Pygame initialization and basic set up of the global variables.
+    pygame.mixer.pre_init(44100, -16, 2, 1024)
     pygame.init()
+    pygame.mixer.set_num_channels(64)
     FPSCLOCK = pygame.time.Clock()
 
     # Because the Surface object stored in DISPLAYSURF was returned
@@ -113,7 +131,7 @@ def main():
                     IMAGESDICT['horngirl'],
                     IMAGESDICT['pinkgirl']]
 
-    startScreen() # show the title screen until the user presses a key
+    await startScreen() # show the title screen until the user presses a key
 
     # Read in the levels from the text file. See the readLevelsFile() for
     # details on the format of this file and how to make your own levels.
@@ -124,7 +142,7 @@ def main():
     # finishes that level, the next/previous level is loaded.
     while True: # main game loop
         # Run the level to actually start playing the game:
-        result = runLevel(levels, currentLevelIndex)
+        result = await runLevel(levels, currentLevelIndex)
 
         if result in ('solved', 'next'):
             # Go to the next level.
@@ -142,7 +160,7 @@ def main():
             pass # Do nothing. Loop re-calls runLevel() to reset the level
 
 
-def runLevel(levels, levelNum):
+async def runLevel(levels, levelNum):
     global currentImage
     levelObj = levels[levelNum]
     mapObj = decorateMap(levelObj['mapObj'], levelObj['startState']['player'])
@@ -280,7 +298,8 @@ def runLevel(levels, levelNum):
                 return 'solved'
 
         pygame.display.update() # draw DISPLAYSURF to the screen.
-        FPSCLOCK.tick()
+        FPSCLOCK.tick(FPS)
+        await asyncio.sleep(0)
 
 
 def isWall(mapObj, x, y):
@@ -396,7 +415,7 @@ def makeMove(mapObj, gameStateObj, playerMoveTo):
         return True
 
 
-def startScreen():
+async def startScreen():
     """Display the start screen (which has the title and instructions)
     until the player presses a key. Returns None."""
 
@@ -442,7 +461,8 @@ def startScreen():
 
         # Display the DISPLAYSURF contents to the actual screen.
         pygame.display.update()
-        FPSCLOCK.tick()
+        FPSCLOCK.tick(FPS)
+        await asyncio.sleep(0)
 
 
 def readLevelsFile(filename):
@@ -617,4 +637,4 @@ def terminate():
 
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())
